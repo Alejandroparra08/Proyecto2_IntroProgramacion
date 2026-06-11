@@ -9,6 +9,7 @@ from tkinter import messagebox
 
 
 def registrarse():
+    global ventana_registro
     ventana_registro = tk.Toplevel()
     ventana_registro.title("Registro")
 
@@ -75,12 +76,13 @@ def registrarse():
         with open("jugadores.json", "w") as archivo:
             json.dump(jugadores, archivo, indent=4)
 
+        ventana_registro.destroy()
         messagebox.showinfo(
             "Exito",
             "Usuario registrado correctamente"
         )
 
-        venatana_registro.destroy()
+        ventana_registro.destroy()
 
         print(usuario)
 
@@ -94,7 +96,44 @@ def registrarse():
 
     boton_registrar.pack()
 
+
+
+def abrir_menu_principal(usuario):
+    ventana_menu = tk.Toplevel()
+    ventana_menu.title("Menú Principal")
+    ventana_menu.geometry("800x600")
+
+    tk.Label(
+        ventana_menu,
+        text=f"Bienvenido, {usuario}!",
+        font=("Arial", 20)
+    ).pack(pady=30)
+
+    tk.Button(
+        ventana_menu,
+        text="Nueva Partida",
+        width=20,
+        command=lambda: print("Nueva partida")
+    ).pack(pady=10)
+
+    tk.Button(
+        ventana_menu,
+        text="Ver Ranking",
+        width=20,
+        command=lambda: print("Ranking")
+    ).pack(pady=10)
+
+    tk.Button(
+        ventana_menu,
+        text="Salir",
+        width=20,
+        command=ventana_menu.destroy
+    ).pack(pady=10)
+
+
+
 def iniciar_sesion():
+    global ventana_login
     ventana_login = tk.Toplevel()
     ventana_login.title("Iniciar Sesión")
 
@@ -109,6 +148,8 @@ def iniciar_sesion():
 
     entrada_contrasena = tk.Entry(ventana_login, show="*")
     entrada_contrasena.pack()
+
+
 
     def verificar_login():
         usuario = entrada_usuario.get()
@@ -127,7 +168,8 @@ def iniciar_sesion():
         for jugador in jugadores:
              if jugador["usuario"] == usuario:
                  if jugador["contrasena"] == contrasena:
-                    messagebox.showinfo("Éxito", f"Bienvenido, {usuario}!")
+                    abrir_menu_principal(usuario)
+                    ventana.withdraw()
                     ventana_login.destroy()
                     return
                  else:
