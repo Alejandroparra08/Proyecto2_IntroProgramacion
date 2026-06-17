@@ -1,11 +1,7 @@
 #import zone
 import os
-import sys
 
-
-sys.path.insert(0, r"C:\Users\aleja\OneDrive\Documents\Introduccion a la programacion\Proyecto II Juego - Alejandro & Mathew")
-os.chdir(r"C:\Users\aleja\OneDrive\Documents\Introduccion a la programacion\Proyecto II Juego - Alejandro & Mathew")
-
+CARPETA_PROYECTO = os.path.dirname(os.path.abspath(__file__))
 
 import tkinter as tk
 import json
@@ -23,7 +19,7 @@ FUENTE_NORMAL = ("Courier", 12)
 FUENTE_BTN   = ("Courier", 14, "bold")
 FUENTE_SMALL = ("Courier", 10)
 COLOR_ROJO_VIF = "#FF0000"
-RUTA_JSON = "jugadores.json"
+RUTA_JSON = os.path.join(CARPETA_PROYECTO, "jugadores.json")
 
 
 """
@@ -240,13 +236,56 @@ def mostrar_fase_defensor(defensor, atacante, rol_defensor, rol_atacante):
         font=FUENTE_NORMAL
     ).pack(anchor="w")
 
+    tk.Label(
+        frame_torres,
+        text="",
+        bg="#0d0000"
+    ).pack(pady=5)
+
+    modo_sel = tk.StringVar(value="colocar")
+
+    tk.Radiobutton(
+        frame_torres,
+        text="🗑 Borrar",
+        variable=modo_sel,
+        value="borrar",
+        bg="#0d0000",
+        fg=COLOR_ROJO_VIF,
+        selectcolor="#1a0000",
+        font=FUENTE_NORMAL
+    ).pack(anchor="w")
+
     costos = {"Torre1": 50, "Torre2": 80, "Torre3": 60}
 
     def colocar_torre(f, c):
+        if modo_sel.get() == "borrar":
+            print("modo:", modo_sel.get(), "mapa valor:", juego.mapa[f][c])
+            if juego.mapa[f][c] == 1:
+                juego.mapa[f][c] = 0
+                juego.actualizar_celda(f, c)
+                if (f, c) in juego.torres:
+                    texto = juego.torres[(f, c)].texto
+                    if texto == "T":
+                        dinero[0] += 50
+                    elif texto == "D":
+                        dinero[0] += 80
+                    else:
+                        dinero[0] += 60
+                    del juego.torres[(f, c)]
+                    lbl_dinero.config(text=f"💰 Dinero: {dinero[0]}")
+            return
+    
+        if c == 0 or c > 4:
+            lbl_dinero.config(text="⚠ Solo puedes colocar torres en columnas 1-4")
+            ventana.after(1500, lambda: lbl_dinero.config(text=f"💰 Dinero: {dinero[0]}"))
+            return
         tipo = torre_sel.get()
         costo = costos[tipo]
         if dinero[0] < costo:
+            lbl_dinero.config(text="⚠ No tienes suficiente dinero")
+            ventana.after(1500, lambda: lbl_dinero.config(text=f"💰 Dinero: {dinero[0]}"))
             return
+
         dinero[0] -= costo
         lbl_dinero.config(text=f"💰 Dinero: {dinero[0]}")
 
@@ -268,23 +307,25 @@ def mostrar_fase_defensor(defensor, atacante, rol_defensor, rol_atacante):
             ventana=ventana,
             actualizar_celda=juego.actualizar_celda,
             fila=f, col=c,
-            color_torre="#ff2200",
-            color_onda="#ff7700",
+            color_torre=color_torre,
+            color_onda=color_onda,
             vecinos=[(-1,-1),(-1,0),(-1,1),(0,-1),(0,1),(1,-1),(1,0),(1,1)],
             velocidad=500,
             vida=120,
             daño=60,
             texto=texto
         )
+        juego.torres[(f, c)] = juego.torre
         juego.mapa[f][c] = 1
         juego.actualizar_celda(f, c)
 
     juego.callback_clic = colocar_torre
+    juego.torres = {}
 
     tk.Button(
         frame_actual,
         text="☣  LISTO  ☣",
-        command=lambda: print("fase atacante"),
+        command=lambda: mostrar_fase_atacante(defensor, atacante, rol_defensor, rol_atacante, juego.mapa)if len(juego.torres) > 0 else lbl_dinero.config(text="⚠ Debes colocar al menos una torre"),
         font=FUENTE_BTN,
         bg="#1a0000",
         fg=COLOR_ROJO_VIF,
@@ -294,6 +335,148 @@ def mostrar_fase_defensor(defensor, atacante, rol_defensor, rol_atacante):
         pady=12,
         width=20
     ).pack(pady=8)
+
+
+def mostrar_fase_atacante(defensor, atacante, rol_defensor, rol_atacante, mapa_defensor):
+    global frame_actual
+    if frame_actual:
+        frame_actual.destroy()
+
+    frame_actual = tk.Frame(
+        ventana,
+        bg="#0d0000"
+    )
+    frame_actual.place(relx=0.5, rely=0.5, anchor="center")
+
+    tk.Label(
+        frame_actual,
+        text="FASE DE ATAQUE",
+        font=FUENTE_BTN,
+        bg="#0d0000",
+        fg=COLOR_ROJO_VIF
+    ).pack(pady=(10,0))
+
+    tk.Label(
+        frame_actual,
+        text=f"{atacante.upper()} — compra tus unidades",
+        font=FUENTE_NORMAL,
+        bg="#0d0000",
+        fg=COLOR_VERDE
+    ).pack()
+
+    dinero = [300]
+    lbl_dinero = tk.Label(
+        frame_actual,
+        text=f"💰 Dinero: {dinero[0]}",
+        font=FUENTE_NORMAL,
+        bg="#0d0000",
+        fg="#FFD700"
+    )
+    lbl_dinero.pack()
+
+    frame_central = tk.Frame(
+        frame_actual,
+        bg="#0d0000"
+    )
+    frame_central.pack(pady=10)
+
+    # Mapa vacío
+    frame_mapa = tk.Frame(
+        frame_central,
+        bg="#0d0000"
+    )
+    frame_mapa.pack(side="left", padx=10)
+    juego_atk = VentanaMapa(frame_mapa)
+
+    # Panel de unidades
+    frame_unidades = tk.Frame(
+        frame_central,
+        bg="#0d0000",
+        padx=10
+    )
+    frame_unidades.pack(side="left")
+
+    unidad_sel = tk.StringVar(value="Zombie")
+
+    tk.Label(
+        frame_unidades,
+        text="UNIDADES:",
+        font=FUENTE_NORMAL,
+        bg="#0d0000",
+        fg=COLOR_ROJO_VIF
+    ).pack(anchor="w")
+    
+    tk.Radiobutton(
+        frame_unidades,
+        text="Zombie ($40)",
+        variable=unidad_sel,
+        value="Zombie",
+        bg="#0d0000",
+        fg=COLOR_ROJO_VIF,
+        selectcolor="#1a0000",
+        font=FUENTE_NORMAL
+    ).pack(anchor="w")
+    
+    tk.Radiobutton(
+        frame_unidades,
+        text="Corredor ($60)",
+        variable=unidad_sel,
+        value="Corredor",
+        bg="#0d0000",
+        fg=COLOR_ROJO_VIF,
+        selectcolor="#1a0000",
+        font=FUENTE_NORMAL
+    ).pack(anchor="w")
+    
+    tk.Radiobutton(
+        frame_unidades,
+        text="Tanque ($100)",
+        variable=unidad_sel,
+        value="Tanque",
+        bg="#0d0000",
+        fg=COLOR_ROJO_VIF,
+        selectcolor="#1a0000",
+        font=FUENTE_NORMAL
+    ).pack(anchor="w")
+
+    costos = {"Zombie": 40, "Corredor": 60, "Tanque": 100}
+    unidades_colocadas = []
+
+    def colocar_unidad(f, c):
+        if c != 9:
+            lbl_dinero.config(text="⚠ Solo puedes colocar en la columna derecha")
+            ventana.after(1500, lambda: lbl_dinero.config(text=f"💰 Dinero: {dinero[0]}"))
+            return
+        tipo = unidad_sel.get()
+        costo = costos[tipo]
+        if dinero[0] < costo:
+            lbl_dinero.config(text="⚠ No tienes suficiente dinero")
+            ventana.after(1500, lambda: lbl_dinero.config(text=f"💰 Dinero: {dinero[0]}"))
+            return
+        dinero[0] -= costo
+        lbl_dinero.config(text=f"💰 Dinero: {dinero[0]}")
+        colores = {"Zombie": "#39ff14", "Corredor": "#ffff00", "Tanque": "#ff6600"}
+        textos = {"Zombie": "Z", "Corredor": "C", "Tanque": "T"}
+        juego_atk.mapa[f][c] = 5
+        juego_atk.botones[f][c].config(bg=colores[tipo], fg="black", text=textos[tipo])
+        unidades_colocadas.append({"tipo": tipo, "fila": f})
+
+    juego_atk.callback_clic = colocar_unidad
+
+    tk.Button(
+        frame_actual,
+        text="☣  INICIAR COMBATE  ☣",
+        command=lambda: print("combate"),
+        font=FUENTE_BTN, bg="#1a0000",
+        fg=COLOR_ROJO_VIF,
+        relief="flat",
+        cursor="hand2",
+        padx=40,
+        pady=12,
+        width=20
+    ).pack(pady=8)
+
+
 
 
 
@@ -937,7 +1120,9 @@ ventana.title("ATTACK US")
 ventana.state("zoomed")
 
 
-fondo_inicio_img = tk.PhotoImage(file="fondo_login.png")
+fondo_inicio_img = tk.PhotoImage(
+    file=os.path.join(CARPETA_PROYECTO, "fondo_login.png")
+)
 fondo_label = tk.Label(
     ventana,
     image = fondo_inicio_img
@@ -954,18 +1139,6 @@ tk.Label(
 ).place(relx=0.5, rely=0.1, anchor = "center")
 
 mostrar_inicio()
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 ventana.mainloop()

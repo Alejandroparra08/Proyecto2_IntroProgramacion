@@ -21,8 +21,11 @@ class VentanaMapa:
         self.sierra = None
         self.crear_mapa()
 
+        self.mapa[4][0] = 4
+        self.actualizar_celda(4, 0)
+
     def clic_celda(self, f, c):
-        if self.mapa[f][c] == 0 and self.callback_clic:
+        if self.callback_clic:
             self.callback_clic(f, c)
 
     def crear_mapa(self):
@@ -31,8 +34,8 @@ class VentanaMapa:
             for c in range(self.columnas):
                 boton = tk.Button(
                     frame,
-                    width=6,
-                    height=3,
+                    width=4,
+                    height=2,
                     font=("Arial", 12, "bold"),
                     command=lambda f=f, c=c: self.clic_celda(f, c)
                 )
@@ -70,6 +73,13 @@ class VentanaMapa:
                 bg=self.sierra.color_actual,
                 fg="black",
                 text="*"
+            )
+
+        elif valor == 4:
+            self.botones[f][c].config(
+                bg="#8b0000",
+                fg="white",
+                text="BASE"
             )
 
 class Torre:
