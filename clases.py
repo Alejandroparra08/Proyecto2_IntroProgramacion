@@ -33,7 +33,7 @@ class VentanaMapa:
                     frame,
                     width=6,
                     height=3,
-                    font=("Arial", 12, "bold")
+                    font=("Arial", 12, "bold"),
                     command=lambda f=f, c=c: self.clic_celda(f, c)
                 )
                 boton.grid(row=f, column=c, padx=1, pady=1)
@@ -57,7 +57,7 @@ class VentanaMapa:
             self.botones[f][c].config(
                 bg=self.torre.color_torre,
                 fg="white",
-                text="T"
+                text=self.torre.texto if hasattr(self.torre, 'texto') else 'T'
             )
         elif valor == 2:
             self.botones[f][c].config(
@@ -73,7 +73,7 @@ class VentanaMapa:
             )
 
 class Torre:
-    def __init__(self, mapa, ventana, actualizar_celda, fila, col, color_torre, color_onda, vecinos, velocidad, vida, daño):
+    def __init__(self, mapa, ventana, actualizar_celda, fila, col, color_torre, color_onda, vecinos, velocidad, vida, daño, texto = "T"):
         self.mapa = mapa
         self.ventana = ventana
         self.actualizar_celda = actualizar_celda
@@ -86,6 +86,7 @@ class Torre:
         self.vida = vida
         self.daño = daño
         self.onda_encendida = False
+        self.texto = texto
 
     def colocar(self):
         self.mapa[self.fila][self.col] = 1
