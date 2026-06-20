@@ -7,20 +7,12 @@ class VentanaMapa:
         self.columnas = 10
         self.color_vacio = "#1d0800"
         self.callback_clic = None
-
-        self.mapa = [
-            [0 for _ in range(self.columnas)]
-            for _ in range(self.filas)
-        ]
-
-        self.botones = [
-            [None for _ in range(self.columnas)]
-            for _ in range(self.filas)
-        ]
-        self.torre = None
-        self.sierra = None
+        
+        self.mapa = [[0 for _ in range(self.columnas)] for _ in range(self.filas)]
+        self.torres = {}
+        self.botones = [[None for _ in range(self.columnas)] for _ in range(self.filas)]
+        
         self.crear_mapa()
-
         self.mapa[4][0] = 4
         self.actualizar_celda(4, 0)
 
@@ -29,14 +21,11 @@ class VentanaMapa:
             self.callback_clic(f, c)
 
     def crear_mapa(self):
-        frame = self.ventana
         for f in range(self.filas):
             for c in range(self.columnas):
                 boton = tk.Button(
-                    frame,
-                    width=4,
-                    height=2,
-                    font=("Arial", 12, "bold"),
+                    self.ventana, width=4, height=2,
+                    font=("Arial", 10, "bold"),
                     command=lambda f=f, c=c: self.clic_celda(f, c)
                 )
                 boton.grid(row=f, column=c, padx=1, pady=1)
@@ -49,148 +38,125 @@ class VentanaMapa:
                 self.actualizar_celda(f, c)
 
     def actualizar_celda(self, f, c):
+        if not self.botones[f][c] or not self.botones[f][c].winfo_exists():
+            return
         valor = self.mapa[f][c]
         if valor == 0:
-            self.botones[f][c].config(
-                bg=self.color_vacio,
-                fg="white",
-                text=" "
-            )
+            self.botones[f][c].config(bg=self.color_vacio, fg="white", text=" ")
         elif valor == 1:
+            defensa = self.torres.get((f, c))
             self.botones[f][c].config(
-                bg=self.torre.color_torre,
+                bg=getattr(defensa, 'color', "#ff2200"),
                 fg="white",
-                text=self.torre.texto if hasattr(self.torre, 'texto') else 'T'
+                text=getattr(defensa, 'texto', "T")
             )
-        elif valor == 2:
-            self.botones[f][c].config(
-                bg=self.torre.color_onda,
-                fg="white",
-                text="1"
-            )
-        elif valor == 3:
-            self.botones[f][c].config(
-                bg=self.sierra.color_actual,
-                fg="black",
-                text="*"
-            )
-
         elif valor == 4:
-            self.botones[f][c].config(
-                bg="#8b0000",
-                fg="white",
-                text="BASE"
-            )
+            self.botones[f][c].config(bg="#8b0000", fg="white", text="BASE")
+        elif valor == 5:
+            self.botones[f][c].config(bg="#39ff14", fg="black", text="E")
 
-class Torre:
-    def __init__(self, mapa, ventana, actualizar_celda, fila, col, color_torre, color_onda, vecinos, velocidad, vida, daño, texto = "T"):
+# defensores
+
+class Muro:
+    def __init__(self, mapa, ventana, fila, col, actualizar_celda):
         self.mapa = mapa
         self.ventana = ventana
-        self.actualizar_celda = actualizar_celda
         self.fila = fila
         self.col = col
-        self.color_torre = color_torre
-        self.color_onda = color_onda
-        self.vecinos = vecinos
-        self.velocidad = velocidad
+        self.actualizar_celda = actualizar_celda
+        self.vida = 500
+        self.texto = "M"
+        self.color = "#8B4513"
+    
+    def colocar(self):
+        self.mapa[self.fila][self.col] = 1
+        self.actualizar_celda(self.fila, self.col)
+
+class Torre2: # Cactus
+    def __init__(self, mapa, ventana, fila, col, actualizar_celda):
+        self.mapa = mapa
+        self.ventana = ventana
+        self.fila = fila
+        self.col = col
+        self.actualizar_celda = actualizar_celda
+        self.vida = 200
+        self.texto = "C"
+        self.color = "#228B22"
+        self.daño = 10
+    
+    def colocar(self):
+        self.mapa[self.fila][self.col] = 1
+        self.actualizar_celda(self.fila, self.col)
+
+class Torre1:
+    def __init__(self, mapa, ventana, fila, col, actualizar_celda, color_torre1, color_onda, vida, daño, texto="T"):
+        self.mapa = mapa
+        self.ventana = ventana
+        self.fila = fila
+        self.col = col
+        self.actualizar_celda = actualizar_celda
+        self.color = color_torre1
         self.vida = vida
         self.daño = daño
-        self.onda_encendida = False
         self.texto = texto
 
     def colocar(self):
         self.mapa[self.fila][self.col] = 1
         self.actualizar_celda(self.fila, self.col)
 
-    def cambiar_vecinos(self, encender):
-        valor_nuevo = 2 if encender else 0
-        for df, dc in self.vecinos:
-            nf = self.fila + df
-            nc = self.col + dc
-            if 0 <= nf < len(self.mapa) and 0 <= nc < len(self.mapa[0]):
-                if self.mapa[nf][nc] != 1 and self.mapa[nf][nc] != 3:
-                    self.mapa[nf][nc] = valor_nuevo
-                    self.actualizar_celda(nf, nc)
-
-    def animar(self):
-        self.onda_encendida = not self.onda_encendida
-        self.cambiar_vecinos(self.onda_encendida)
-        self.ventana.after(self.velocidad, self.animar)
-
-class Sierra:
-    def __init__(self, mapa, ventana, actualizar_celda, fila, col, color_1, color_2, velocidad, vida, daño):
+class Torre3:
+    def __init__(self, mapa, ventana, fila, col, actualizar_celda, color_1, vida, daño, texto="D"):
         self.mapa = mapa
         self.ventana = ventana
-        self.actualizar_celda = actualizar_celda
         self.fila = fila
         self.col = col
-        self.color_1 = color_1
-        self.color_2 = color_2
-        self.velocidad = velocidad
-        self.color_actual = self.color_1
+        self.actualizar_celda = actualizar_celda
+        self.color = color_1
         self.vida = vida
         self.daño = daño
+        self.texto = texto
 
     def colocar(self):
-        self.mapa[self.fila][self.col] = 3
+        self.mapa[self.fila][self.col] = 1
         self.actualizar_celda(self.fila, self.col)
 
-    def animar(self):
-        if self.color_actual == self.color_1:
-            self.color_actual = self.color_2
-        else:
-            self.color_actual = self.color_1
-        self.actualizar_celda(self.fila, self.col)
-        self.ventana.after(self.velocidad, self.animar)
+# atacantes
 
-class Disparador:
-    def __init__(self, mapa, ventana, actualizar_celda, fila, col, color_disparador, color_disparo, direccion, velocidad, vida, daño):
+class Zombie:
+    def __init__(self, mapa, fila, col):
         self.mapa = mapa
-        self.ventana = ventana
-        self.actualizar_celda = actualizar_celda
         self.fila = fila
         self.col = col
-        self.color_disparador = color_disparador 
-        self.color_disparo = color_disparo        
-        self.direccion = direccion               
-        self.velocidad = velocidad
-        self.vida = vida
-        self.daño = daño
+        self.nombre = "Zombie"
+        self.vida = 80
+        self.daño = 15
+        self.velocidad = 1
+        self.costo = 40
+        self.color = "#39ff14"
+        self.texto = "Z"
 
-if __name__ == "__main__":
-    ventana = tk.Tk()
-    juego = VentanaMapa(ventana)
+class Corredor:
+    def __init__(self, mapa, fila, col):
+        self.mapa = mapa
+        self.fila = fila
+        self.col = col
+        self.nombre = "Corredor"
+        self.vida = 40
+        self.daño = 10
+        self.velocidad = 2
+        self.costo = 60
+        self.color = "#ffff00"
+        self.texto = "C"
 
-    juego.torre = Torre(
-        mapa=juego.mapa,
-        ventana=ventana,
-        actualizar_celda=juego.actualizar_celda,
-        fila=3,
-        col=3,
-        color_torre="#ff2200",
-        color_onda="#ff7700",
-        vecinos=[(-1,-1),(-1,0),(-1,1),(0,-1),(0,1),(1,-1),(1,0),(1,1)],
-        velocidad=500,
-        vida=120,
-        daño=60
-    )
-
-    juego.sierra = Sierra(
-        mapa=juego.mapa,
-        ventana=ventana,
-        actualizar_celda=juego.actualizar_celda,
-        fila=5,
-        col=5,
-        color_1="#ffcc00",
-        color_2="#ff9900",
-        velocidad=200,
-        vida=300,
-        daño=10
-    )
-
-    juego.torre.colocar()
-    juego.sierra.colocar()
-    juego.torre.animar()
-    juego.sierra.animar()
-
-    ventana.mainloop()
+class Tanque:
+    def __init__(self, mapa, fila, col):
+        self.mapa = mapa
+        self.fila = fila
+        self.col = col
+        self.nombre = "Tanque"
+        self.vida = 200
+        self.daño = 30
+        self.velocidad = 1
+        self.costo = 100
+        self.color = "#ff6600"
+        self.texto = "K"

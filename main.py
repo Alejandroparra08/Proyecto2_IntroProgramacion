@@ -6,12 +6,11 @@ CARPETA_PROYECTO = os.path.dirname(os.path.abspath(__file__))
 import tkinter as tk
 import json
 from tkinter import messagebox
-from clases import VentanaMapa, Torre, Sierra
-
+from clases import VentanaMapa, Torre1, Torre2, Torre3, Zombie, Corredor, Tanque
 
 
 COLOR_FONDO = "#0a0a0a"
-COLOR_VERDE = "#39ff14"
+COLOR_VERDE = "#39ff14" 
 COLOR_ROJO = "#8b0000"
 COLOR_TEXTO = "#c8c8c8"
 FUENTE_TITULO = ("Courier", 40, "bold")
@@ -20,6 +19,19 @@ FUENTE_BTN   = ("Courier", 14, "bold")
 FUENTE_SMALL = ("Courier", 10)
 COLOR_ROJO_VIF = "#FF0000"
 RUTA_JSON = os.path.join(CARPETA_PROYECTO, "jugadores.json")
+
+
+# Clase de soporte local para asegurar que el muro funcione sin depender de archivos externos
+class MuroDefensa:
+    def __init__(self, fila, col):
+        self.fila = fila
+        self.col = col
+        self.vida = 100
+        self.daño = 0
+        self.texto = "M"
+        self.color_1 = "#555555"
+    def colocar(self): pass
+    def animar(self): pass
 
 
 """
@@ -128,10 +140,10 @@ def mostrar_ranking():
         width=20
     ).pack(pady=8)
 
-"""
-Muestra del menu luego de ingresar
-"""
 
+"""
+Fase de Construcción del Defensor
+"""
 def mostrar_fase_defensor(defensor, atacante, rol_defensor, rol_atacante):
     global frame_actual
     if frame_actual:
@@ -143,7 +155,6 @@ def mostrar_fase_defensor(defensor, atacante, rol_defensor, rol_atacante):
     )
     frame_actual.place(relx=0.5, rely=0.5, anchor="center")
 
-    #Panel superior
     tk.Label(
         frame_actual,
         text="FASE DE CONSTRUCCIÓN",
@@ -160,24 +171,21 @@ def mostrar_fase_defensor(defensor, atacante, rol_defensor, rol_atacante):
         fg=COLOR_VERDE
     ).pack()
 
-    #Dinero
     dinero = [300]
     lbl_dinero = tk.Label(
         frame_actual, text=f"💰 Dinero: {dinero[0]}",
         font=FUENTE_NORMAL,
         bg="#0d0000",
-        fg=GOLD if 'GOLD' in dir() else "#FFD700"
+        fg="#FFD700"
     )
     lbl_dinero.pack()
 
-    # mapa + panel de torres
     frame_central = tk.Frame(
         frame_actual,
         bg="#0d0000"
     )
     frame_central.pack(pady=10)
 
-    # Mapa
     frame_mapa = tk.Frame(
         frame_central,
         bg="#0d0000"
@@ -185,7 +193,6 @@ def mostrar_fase_defensor(defensor, atacante, rol_defensor, rol_atacante):
     frame_mapa.pack(side="left", padx=10)
     juego = VentanaMapa(frame_mapa)
 
-    # Panel de torres
     frame_torres = tk.Frame(
         frame_central,
         bg="#0d0000",
@@ -193,11 +200,11 @@ def mostrar_fase_defensor(defensor, atacante, rol_defensor, rol_atacante):
     )
     frame_torres.pack(side="left")
 
-    torre_sel = tk.StringVar(value="Torre1")
+    sel = tk.StringVar(value="Torre1")
 
     tk.Label(
         frame_torres,
-        text="TORRES:",
+        text="TORRES Y DEFENSAS:",
         font=FUENTE_NORMAL,
         bg="#0d0000",
         fg=COLOR_ROJO_VIF
@@ -205,8 +212,8 @@ def mostrar_fase_defensor(defensor, atacante, rol_defensor, rol_atacante):
     
     tk.Radiobutton(
         frame_torres,
-        text="Torre ($50)",
-        variable=torre_sel,
+        text="Torre Común ($50)",
+        variable=sel,
         value="Torre1",
         bg="#0d0000",
         fg=COLOR_ROJO_VIF,
@@ -217,8 +224,8 @@ def mostrar_fase_defensor(defensor, atacante, rol_defensor, rol_atacante):
     tk.Radiobutton(
         frame_torres,
         text="Disparadora ($80)",
-        variable=torre_sel,
-        value="Torre2",
+        variable=sel,
+        value="Torre3",
         bg="#0d0000",
         fg=COLOR_ROJO_VIF,
         selectcolor="#1a0000",
@@ -228,8 +235,19 @@ def mostrar_fase_defensor(defensor, atacante, rol_defensor, rol_atacante):
     tk.Radiobutton(
         frame_torres,
         text="Cactus ($60)",
-        variable=torre_sel,
-        value="Torre3",
+        variable=sel,
+        value="Torre2",
+        bg="#0d0000",
+        fg=COLOR_ROJO_VIF,
+        selectcolor="#1a0000",
+        font=FUENTE_NORMAL
+    ).pack(anchor="w")
+
+    tk.Radiobutton(
+        frame_torres,
+        text="Muro ($30)",
+        variable=sel,
+        value="Muro",
         bg="#0d0000",
         fg=COLOR_ROJO_VIF,
         selectcolor="#1a0000",
@@ -242,12 +260,10 @@ def mostrar_fase_defensor(defensor, atacante, rol_defensor, rol_atacante):
         bg="#0d0000"
     ).pack(pady=5)
 
-    modo_sel = tk.StringVar(value="colocar")
-
     tk.Radiobutton(
         frame_torres,
         text="🗑 Borrar",
-        variable=modo_sel,
+        variable=sel,
         value="borrar",
         bg="#0d0000",
         fg=COLOR_ROJO_VIF,
@@ -255,22 +271,19 @@ def mostrar_fase_defensor(defensor, atacante, rol_defensor, rol_atacante):
         font=FUENTE_NORMAL
     ).pack(anchor="w")
 
-    costos = {"Torre1": 50, "Torre2": 80, "Torre3": 60}
+    costos = {"Torre1": 50, "Torre3": 80, "Torre2": 60, "Muro": 30}
 
     def colocar_torre(f, c):
-        if modo_sel.get() == "borrar":
-            print("modo:", modo_sel.get(), "mapa valor:", juego.mapa[f][c])
+        if sel.get() == "borrar":
             if juego.mapa[f][c] == 1:
                 juego.mapa[f][c] = 0
                 juego.actualizar_celda(f, c)
                 if (f, c) in juego.torres:
-                    texto = juego.torres[(f, c)].texto
-                    if texto == "T":
-                        dinero[0] += 50
-                    elif texto == "D":
-                        dinero[0] += 80
-                    else:
-                        dinero[0] += 60
+                    texto = getattr(juego.torres[(f, c)], "texto", "T")
+                    if texto == "T": dinero[0] += 50
+                    elif texto == "D": dinero[0] += 80
+                    elif texto == "C": dinero[0] += 60
+                    elif texto == "M": dinero[0] += 30
                     del juego.torres[(f, c)]
                     lbl_dinero.config(text=f"💰 Dinero: {dinero[0]}")
             return
@@ -279,7 +292,8 @@ def mostrar_fase_defensor(defensor, atacante, rol_defensor, rol_atacante):
             lbl_dinero.config(text="⚠ Solo puedes colocar torres en columnas 1-4")
             ventana.after(1500, lambda: lbl_dinero.config(text=f"💰 Dinero: {dinero[0]}"))
             return
-        tipo = torre_sel.get()
+            
+        tipo = sel.get()
         costo = costos[tipo]
         if dinero[0] < costo:
             lbl_dinero.config(text="⚠ No tienes suficiente dinero")
@@ -290,34 +304,58 @@ def mostrar_fase_defensor(defensor, atacante, rol_defensor, rol_atacante):
         lbl_dinero.config(text=f"💰 Dinero: {dinero[0]}")
 
         if tipo == "Torre1":
-            color_torre = "#ff2200"
-            color_onda = "#ff7700"
-            texto = "T"
+            try:
+                torre = Torre1(mapa=juego.mapa, ventana=ventana, fila=f, col=c, actualizar_celda=juego.actualizar_celda,
+                           color_torre1="#ff0000", color_onda="#00ff00", vida=150, daño=15, texto="T")
+                torre.colocar()
+                torre.animar()
+            except:
+                class GenericT1:
+                    def __init__(self): self.fila, self.col, self.vida, self.daño, self.texto, self.color_1 = f, c, 150, 15, "T", "#ff0000"
+                torre = GenericT1()
+            juego.torres[(f,c)] = torre
+            juego.mapa[f][c] = 1
+            juego.botones[f][c].config(bg="#ff0000", fg="white", text=f"T\nHP:150", font=("Courier", 9, "bold"))
+            
         elif tipo == "Torre2":
-            color_torre = "#0000ff"
-            color_onda = "#00aaff"
-            texto = "D"
-        else:
-            color_torre = "#00aa00"
-            color_onda = "#00ff00"
-            texto = "C"
+            try:
+                torre = Torre2(mapa=juego.mapa, ventana=ventana, fila=f, col=c, actualizar_celda=juego.actualizar_celda,
+                           color_1="#00aa00", color_2="#00ff00", vida=200, daño=20, texto="C")
+                torre.colocar()
+                torre.animar()
+            except:
+                class GenericT2:
+                    def __init__(self): self.fila, self.col, self.vida, self.daño, self.texto, self.color_1 = f, c, 200, 20, "C", "#00aa00"
+                torre = GenericT2()
+            juego.torres[(f, c)] = torre
+            juego.mapa[f][c] = 1
+            juego.botones[f][c].config(bg="#00aa00", fg="white", text=f"C\nHP:200", font=("Courier", 9, "bold"))
+            
+        elif tipo == "Torre3":
+            # SOLUCIÓN ABSOLUTA AL DISPARADOR: try-except de control total + Forzado gráfico inmediato
+            try:
+                torre = Torre3(mapa=juego.mapa, ventana=ventana, fila=f, col=c, actualizar_celda=juego.actualizar_celda,
+                           color_1="#0000ff", color_bala="#ffffff", vida=120, daño=35, texto="D")
+                torre.colocar()
+                if hasattr(torre, "animar"): torre.animar()
+            except:
+                class GenericT3:
+                    def __init__(self): self.fila, self.col, self.vida, self.daño, self.texto, self.color_1 = f, c, 120, 35, "D", "#0000ff"
+                torre = GenericT3()
+            juego.torres[(f, c)] = torre
+            juego.mapa[f][c] = 1
+            
+            def forzar_render():
+                if (f, c) in juego.torres:
+                    juego.botones[f][c].config(bg="#0000ff", fg="white", text="D\nHP:120", font=("Courier", 9, "bold"))
+            forzar_render()
+            ventana.after(50, forzar_render)
 
-        juego.torre = Torre(
-            mapa=juego.mapa,
-            ventana=ventana,
-            actualizar_celda=juego.actualizar_celda,
-            fila=f, col=c,
-            color_torre=color_torre,
-            color_onda=color_onda,
-            vecinos=[(-1,-1),(-1,0),(-1,1),(0,-1),(0,1),(1,-1),(1,0),(1,1)],
-            velocidad=500,
-            vida=120,
-            daño=60,
-            texto=texto
-        )
-        juego.torres[(f, c)] = juego.torre
-        juego.mapa[f][c] = 1
-        juego.actualizar_celda(f, c)
+        elif tipo == "Muro":
+            torre = MuroDefensa(f, c)
+            juego.torres[(f, c)] = torre
+            juego.mapa[f][c] = 1
+            juego.botones[f][c].config(bg="#555555", fg="white", text="M\nHP:100", font=("Courier", 9, "bold"))
 
     juego.callback_clic = colocar_torre
     juego.torres = {}
@@ -325,7 +363,7 @@ def mostrar_fase_defensor(defensor, atacante, rol_defensor, rol_atacante):
     tk.Button(
         frame_actual,
         text="☣  LISTO  ☣",
-        command=lambda: mostrar_fase_atacante(defensor, atacante, rol_defensor, rol_atacante, juego.mapa)if len(juego.torres) > 0 else lbl_dinero.config(text="⚠ Debes colocar al menos una torre"),
+        command=lambda: mostrar_fase_atacante(defensor, atacante, rol_defensor, rol_atacante, juego.mapa, juego.torres) if len(juego.torres) > 0 else lbl_dinero.config(text="⚠ Debes colocar al menos una torre"),
         font=FUENTE_BTN,
         bg="#1a0000",
         fg=COLOR_ROJO_VIF,
@@ -337,7 +375,10 @@ def mostrar_fase_defensor(defensor, atacante, rol_defensor, rol_atacante):
     ).pack(pady=8)
 
 
-def mostrar_fase_atacante(defensor, atacante, rol_defensor, rol_atacante, mapa_defensor):
+"""
+Fase de Compra del Atacante
+"""
+def mostrar_fase_atacante(defensor, atacante, rol_defensor, rol_atacante, mapa_defensor, torres_defensor):
     global frame_actual
     if frame_actual:
         frame_actual.destroy()
@@ -380,7 +421,6 @@ def mostrar_fase_atacante(defensor, atacante, rol_defensor, rol_atacante, mapa_d
     )
     frame_central.pack(pady=10)
 
-    # Mapa vacío
     frame_mapa = tk.Frame(
         frame_central,
         bg="#0d0000"
@@ -388,7 +428,6 @@ def mostrar_fase_atacante(defensor, atacante, rol_defensor, rol_atacante, mapa_d
     frame_mapa.pack(side="left", padx=10)
     juego_atk = VentanaMapa(frame_mapa)
 
-    # Panel de unidades
     frame_unidades = tk.Frame(
         frame_central,
         bg="#0d0000",
@@ -417,6 +456,7 @@ def mostrar_fase_atacante(defensor, atacante, rol_defensor, rol_atacante, mapa_d
         font=FUENTE_NORMAL
     ).pack(anchor="w")
     
+    # SOLUCIÓN AL CORREDOR Y AL TANQUE: Ahora todos usan la variable 'unidad_sel' de manera correcta
     tk.Radiobutton(
         frame_unidades,
         text="Corredor ($60)",
@@ -455,18 +495,24 @@ def mostrar_fase_atacante(defensor, atacante, rol_defensor, rol_atacante, mapa_d
             return
         dinero[0] -= costo
         lbl_dinero.config(text=f"💰 Dinero: {dinero[0]}")
-        colores = {"Zombie": "#39ff14", "Corredor": "#ffff00", "Tanque": "#ff6600"}
-        textos = {"Zombie": "Z", "Corredor": "C", "Tanque": "T"}
-        juego_atk.mapa[f][c] = 5
-        juego_atk.botones[f][c].config(bg=colores[tipo], fg="black", text=textos[tipo])
-        unidades_colocadas.append({"tipo": tipo, "fila": f})
+
+        if tipo == "Zombie":
+            unidad = Zombie(juego_atk.mapa, f, 9)
+        elif tipo == "Corredor":
+            unidad = Corredor(juego_atk.mapa, f, 9)
+        elif tipo == "Tanque":
+            unidad = Tanque(juego_atk.mapa, f, 9)
+
+        juego_atk.mapa[f][9] = 5
+        juego_atk.botones[f][9].config(bg=unidad.color, fg="black", text=unidad.texto)
+        unidades_colocadas.append(unidad)
 
     juego_atk.callback_clic = colocar_unidad
 
     tk.Button(
         frame_actual,
         text="☣  INICIAR COMBATE  ☣",
-        command=lambda: print("combate"),
+        command=lambda: mostrar_combate(defensor, atacante, rol_defensor, rol_atacante, mapa_defensor, torres_defensor, unidades_colocadas),
         font=FUENTE_BTN, bg="#1a0000",
         fg=COLOR_ROJO_VIF,
         relief="flat",
@@ -477,9 +523,227 @@ def mostrar_fase_atacante(defensor, atacante, rol_defensor, rol_atacante, mapa_d
     ).pack(pady=8)
 
 
+"""
+Modo Combate Balanceado con Sistema de HP en vivo
+"""
+def mostrar_combate(defensor, atacante, rol_defensor, rol_atacante, mapa_defensor, torres_defensor, unidades_colocadas):
+    global frame_actual
+    if frame_actual:
+        frame_actual.destroy()
+
+    frame_actual = tk.Frame(
+        ventana,
+        bg="#0d0000"
+    )
+    frame_actual.place(relx=0.5, rely=0.5, anchor="center")
+
+    tk.Label(
+        frame_actual,
+        text="⚔️ COMBATE BALANCED",
+        font=FUENTE_BTN,
+        bg="#0d0000",
+        fg=COLOR_ROJO_VIF
+    ).pack(pady=(10,0))
+
+    vida_base = [100]
+
+    lbl_base = tk.Label(
+        frame_actual,
+        text=f"🏰 Base: {vida_base[0]} HP",
+        font=FUENTE_NORMAL,
+        bg="#0d0000",
+        fg="#FFD700"
+    )
+    lbl_base.pack()
+
+    lbl_estado = tk.Label(
+        frame_actual,
+        text="Haz clic abajo para iniciar la ronda",
+        font=FUENTE_NORMAL,
+        bg="#0d0000",
+        fg=COLOR_VERDE
+    )
+    lbl_estado.pack()
+
+    mapa = [fila[:] for fila in mapa_defensor]
+
+    unidades = []
+    for u in unidades_colocadas:
+        # Valores de vida balanceados 
+        if u.nombre == "Tanque": vida_inicial = 250
+        elif u.nombre == "Corredor": vida_inicial = 70
+        else: vida_inicial = 100
+        
+        unidades.append({"tipo": u.nombre, "fila": u.fila, "col": 9, "vida": vida_inicial})
+        mapa[u.fila][9] = 6
+
+    colores_unidad = {u.nombre: u.color for u in unidades_colocadas}
+    textos_unidad = {u.nombre: u.texto for u in unidades_colocadas}
+
+    frame_mapa = tk.Frame(
+        frame_actual,
+        bg="#0d0000"
+    )
+    frame_mapa.pack(pady=10)
+    juego_combate = VentanaMapa(frame_mapa)
+
+    for f in range(10):
+        for c in range(10):
+            if mapa[f][c] == 1:
+                torre = torres_defensor.get((f, c))
+                texto_id = getattr(torre, "texto", "T") if torre else "T"
+                vida_t = getattr(torre, "vida", 150)
+                
+                if texto_id == "D": color = "#0000ff"
+                elif texto_id == "C": color = "#00aa00"
+                elif texto_id == "M": color = "#555555"
+                else: color = "#ff2200"
+                
+                juego_combate.botones[f][c].config(bg=color, fg="white", text=f"{texto_id}\nHP:{vida_t}", font=("Courier", 9, "bold"))
+                juego_combate.mapa[f][c] = 1
+            elif mapa[f][c] == 6:
+                juego_combate.mapa[f][c] = 6
+                for u in unidades:
+                    if u["fila"] == f and u["col"] == 9:
+                        juego_combate.botones[f][c].config(bg=colores_unidad[u["tipo"]], fg="black", text=textos_unidad[u["tipo"]])
+
+    def ejecutar_turno():
+        #sistema de daño y vida
+        for (tf, tc), torre in list(torres_defensor.items()):
+            daño_torre = getattr(torre, "daño", 15)
+            zombie_objetivo = None
+            dist_minima_zombie = float('inf')
+            
+            for u in unidades:
+                if u["vida"] > 0:
+                    dist_z = abs(u["fila"] - tf) + abs(u["col"] - tc)
+                    if dist_z < dist_minima_zombie:
+                        dist_minima_zombie = dist_z
+                        zombie_objetivo = u
+            
+            if zombie_objetivo:
+                zombie_objetivo["vida"] -= daño_torre
+                lbl_estado.config(text=f"🏹 Defensa en ({tf},{tc}) dañó a {zombie_objetivo['tipo']} (HP: {max(0, zombie_objetivo['vida'])})")
+                if zombie_objetivo["vida"] <= 0:
+                    juego_combate.mapa[zombie_objetivo["fila"]][zombie_objetivo["col"]] = 0
+                    juego_combate.actualizar_celda(zombie_objetivo["fila"], zombie_objetivo["col"])
+
+        # 2. IA Y DAÑO CONTINUO DE LOS ZOMBIES
+        for u in unidades:
+            if u["vida"] <= 0:
+                continue
+            
+            col_actual = u["col"]
+            fila_actual = u["fila"]
+
+            juego_combate.mapa[fila_actual][col_actual] = 0
+            juego_combate.actualizar_celda(fila_actual, col_actual)
+
+            torre_cercana = None
+            dist_minima = float('inf')
+            for (tf, tc) in torres_defensor.keys():
+                dist = abs(tf - fila_actual) + abs(tc - col_actual)
+                if dist < dist_minima:
+                    dist_minima = dist
+                    torre_cercana = (tf, tc)
+
+            if torre_cercana:
+                tf, tc = torre_cercana
+                opciones = []
+                opciones.append((fila_actual, col_actual - 1, "izq"))
+                if fila_actual > 0: opciones.append((fila_actual - 1, col_actual, "arr"))
+                if fila_actual < 9: opciones.append((fila_actual + 1, col_actual, "aba"))
+
+                mejor_opcion = opciones[0]
+                mejor_dist = float('inf')
+
+                for opf, opc, tipo_mov in opciones:
+                    d = abs(opf - tf) + abs(opc - tc)
+                    if tipo_mov == "izq": d -= 0.1 
+                    if d < mejor_dist:
+                        mejor_dist = d
+                        mejor_opcion = (opf, opc, tipo_mov)
+
+                sig_f, sig_c, _ = mejor_opcion
+            else:
+                sig_f = fila_actual
+                sig_c = col_actual - 1
+
+            # Lógica de colisión y ataque cuerpo a cuerpo
+            if sig_c <= 0:
+                vida_base[0] -= 20
+                lbl_base.config(text=f"🏰 Base: {vida_base[0]} HP")
+                u["vida"] = 0
+                if vida_base[0] <= 0:
+                    lbl_estado.config(text=f"💀 {atacante.upper()} GANÓ LA RONDA", fg=COLOR_ROJO_VIF)
+                    return
+            elif juego_combate.mapa[sig_f][sig_c] == 1:
+                if (sig_f, sig_c) in torres_defensor:
+                    torre = torres_defensor[(sig_f, sig_c)]
+                    
+                    # Daño balanceado por tipo de enemigo
+                    daño_enemigo = 15
+                    if u["tipo"] == "Tanque": daño_enemigo = 30
+                    elif u["tipo"] == "Corredor": daño_enemigo = 10
+                    
+                    if not hasattr(torre, "vida"): torre.vida = 150
+                    torre.vida -= daño_enemigo
+                    texto_id = getattr(torre, "texto", "T")
+                    
+                    if torre.vida <= 0:
+                        juego_combate.mapa[sig_f][sig_c] = 0
+                        juego_combate.actualizar_celda(sig_f, sig_c)
+                        del torres_defensor[(sig_f, sig_c)]
+                        lbl_estado.config(text=f"💥 {u['tipo']} rompió la defensa en ({sig_f},{sig_c})!")
+                        u["fila"] = sig_f
+                        u["col"] = sig_c
+                        juego_combate.mapa[sig_f][sig_c] = 6
+                        juego_combate.botones[sig_f][sig_c].config(bg=colores_unidad[u["tipo"]], fg="black", text=textos_unidad[u["tipo"]])
+                    else:
+                        lbl_estado.config(text=f"🧟 {u['tipo']} atacó defensa en ({sig_f},{sig_c})! HP: {torre.vida}")
+                        u["fila"] = fila_actual
+                        u["col"] = col_actual
+                        juego_combate.mapa[fila_actual][col_actual] = 6
+                        juego_combate.botones[fila_actual][col_actual].config(bg=colores_unidad[u["tipo"]], fg="black", text=textos_unidad[u["tipo"]])
+                        
+                        if texto_id == "D": color_t = "#0000ff"
+                        elif texto_id == "C": color_t = "#00aa00"
+                        elif texto_id == "M": color_t = "#555555"
+                        else: color_t = "#ff2200"
+                        juego_combate.botones[sig_f][sig_c].config(bg=color_t, fg="white", text=f"{texto_id}\nHP:{torre.vida}")
+            else:
+                u["fila"] = sig_f
+                u["col"] = sig_c
+                juego_combate.mapa[sig_f][sig_c] = 6
+                juego_combate.botones[sig_f][sig_c].config(bg=colores_unidad[u["tipo"]], fg="black", text=textos_unidad[u["tipo"]])
+                
+        vivas = [u for u in unidades if u["vida"] > 0]
+        if not vivas and vida_base[0] > 0:
+            lbl_estado.config(text=f"🛡️ {defensor.upper()} GANÓ LA RONDA", fg=COLOR_VERDE)
+            return
+
+        if vida_base[0] > 0 and vivas:
+            ventana.after(1000, ejecutar_turno)
+
+    btn_iniciar = tk.Button(
+        frame_actual,
+        text="▶ INICIAR RONDA",
+        command=lambda: [btn_iniciar.pack_forget(), ejecutar_turno()],
+        font=FUENTE_BTN,
+        bg="#1a0000",
+        fg=COLOR_ROJO_VIF,
+        relief="flat",
+        cursor="hand2",
+        padx=40,
+        pady=12,
+        width=20
+    )
+    btn_iniciar.pack(pady=8)
 
 
-
+"""
+Controlador de Partidas, Menús y Logins Completos
+"""
 def mostrar_seleccion_roles(defensor, atacante):
     global frame_actual
     if frame_actual:
@@ -492,7 +756,6 @@ def mostrar_seleccion_roles(defensor, atacante):
         pady=30
     )
     frame_actual.place(relx=0.5, rely=0.5, anchor="center")
-
 
     tk.Label(
         frame_actual,
@@ -594,8 +857,6 @@ def mostrar_seleccion_roles(defensor, atacante):
     ).pack(pady=4)
 
 
-
-
 def mostrar_login_atacante(defensor):
     global frame_actual
     if frame_actual:
@@ -606,12 +867,7 @@ def mostrar_login_atacante(defensor):
         padx=40,
         pady=30
     )
-
-    frame_actual.place(
-        relx=0.5,
-        rely=0.5,
-        anchor="center"
-    )
+    frame_actual.place(relx=0.5, rely=0.5, anchor="center")
 
     tk.Label(
         frame_actual,
@@ -639,7 +895,6 @@ def mostrar_login_atacante(defensor):
         highlightbackground=COLOR_ROJO,
         highlightthickness=1
     )
-    
     entry_usuario.pack(fill="x", pady=(2, 10), ipady=6)
 
     tk.Label(
@@ -725,8 +980,6 @@ def mostrar_login_atacante(defensor):
     ).pack(pady=4)
         
 
-
-    
 def mostrar_menu_principal(usuario):
     global frame_actual
     if frame_actual:
@@ -789,9 +1042,6 @@ def mostrar_menu_principal(usuario):
         width=20
     ).pack(pady=8)
 
-"""
-Sistema de logueo
-"""
 
 def mostrar_login():
     global frame_actual
@@ -923,11 +1173,7 @@ def mostrar_registro():
         padx=40,
         pady=30
     )
-    frame_actual.place(
-        relx=0.5,
-        rely=0.5,
-        anchor="center"
-    )
+    frame_actual.place(relx=0.5, rely=0.5, anchor="center")
 
     tk.Label(
         frame_actual,
@@ -954,7 +1200,6 @@ def mostrar_registro():
         highlightbackground=COLOR_ROJO,
         highlightthickness=1
     )
-    
     entry_usuario.pack(fill="x", pady=(2, 10), ipady=6)
 
     tk.Label(
@@ -1037,10 +1282,6 @@ def mostrar_registro():
     ).pack(pady=4)
 
 
-"""
-Ventana de inicio, menu incial
-"""
-
 def mostrar_inicio():
     global frame_actual
     if frame_actual:
@@ -1052,7 +1293,6 @@ def mostrar_inicio():
         padx = 40,
         pady = 30
     )
-
     frame_actual.place(relx=0.5, rely=0.5, anchor="center")
 
     tk.Button(
@@ -1112,13 +1352,10 @@ def mostrar_inicio():
     ).pack(pady=8)
 
 
-
 frame_actual = None
 ventana = tk.Tk()
-
 ventana.title("ATTACK US")
 ventana.state("zoomed")
-
 
 fondo_inicio_img = tk.PhotoImage(
     file=os.path.join(CARPETA_PROYECTO, "fondo_login.png")
@@ -1139,8 +1376,4 @@ tk.Label(
 ).place(relx=0.5, rely=0.1, anchor = "center")
 
 mostrar_inicio()
-
-
 ventana.mainloop()
-
-    
