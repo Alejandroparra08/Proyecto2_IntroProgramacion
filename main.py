@@ -198,7 +198,7 @@ def mostrar_fase_defensor(defensor, atacante, rol_defensor, rol_atacante, faccio
     frame_mapa = tk.Frame(frame_central, bg="#0d0000")
     frame_mapa.pack(side="left", padx=10)
     
-    # Aquí es donde inyectamos el color correcto al mapa
+    
     colores_elegidos = FACCIONES.get(faccion_defensor, FACCIONES["Medieval"])
     juego = VentanaMapa(frame_mapa, colores_faccion=colores_elegidos)
 
@@ -312,7 +312,7 @@ def mostrar_fase_defensor(defensor, atacante, rol_defensor, rol_atacante, faccio
         
         if tipo == "Torre1":
             color_torre = colores_elegidos.get("torre1", "#ff0000")
-            color_onda = "#00ff00"  # puedes cambiar esto también por facción después
+            color_onda = "#00ff00" 
                 
             torre = Torre1(mapa=juego.mapa, ventana=ventana, fila=f, col=c, 
                             actualizar_celda=juego.actualizar_celda,
@@ -360,7 +360,7 @@ def mostrar_fase_defensor(defensor, atacante, rol_defensor, rol_atacante, faccio
         elif tipo == "Muro":
             color_muro = colores_elegidos.get("muro", "#555555")
             torre = MuroDefensa(f, c)
-            torre.color_1 = color_muro   # ← Agregamos esto
+            torre.color_1 = color_muro   
                     
             juego.torres[(f, c)] = torre
             juego.mapa[f][c] = 1
@@ -417,7 +417,7 @@ def mostrar_fase_atacante(defensor, atacante, rol_defensor, rol_atacante, mapa_d
     lbl_dinero = tk.Label(frame_actual, text=f"💰 Dinero: {dinero[0]}", font=FUENTE_NORMAL, bg="#0d0000", fg="#FFD700")
     lbl_dinero.pack()
 
-    # Condición de victoria del defensor: el atacante se queda sin dinero
+    # Condición de victoria del defensor, si el atacante se queda sin dinero
     costo_minimo = 40
     if dinero[0] < costo_minimo:
         global victorias_defensor
@@ -470,7 +470,7 @@ def mostrar_fase_atacante(defensor, atacante, rol_defensor, rol_atacante, mapa_d
     frame_mapa = tk.Frame(frame_central, bg="#0d0000")
     frame_mapa.pack(side="left", padx=10)
     
-    # Inyectamos el color para el atacante
+    
     colores_elegidos = FACCIONES.get(faccion_atacante, FACCIONES["Futurista"])
     juego_atk = VentanaMapa(frame_mapa, colores_faccion=colores_elegidos)
 
@@ -603,9 +603,7 @@ def actualizar_victorias(usuario, rol):
 
 
         
-"""
-Modo Combate Balanceado con Sistema de HP en vivo
-"""
+
 
 def mostrar_combate(defensor, atacante, rol_defensor, rol_atacante, faccion_defensor, faccion_atacante, mapa_defensor, torres_defensor, unidades_colocadas, dinero_defensor, dinero_atacante):
     global frame_actual, victorias_defensor, victorias_atacante, btn_iniciar
@@ -653,7 +651,7 @@ def mostrar_combate(defensor, atacante, rol_defensor, rol_atacante, faccion_defe
                 texto_id = getattr(torre, "texto", "T")
                 vida_t = max(0, getattr(torre, "vida", 150))
 
-                # Colores según facción del defensor (mejorado)
+                # Colores según facción del defensor 
                 if texto_id == "T":
                     color_base = colores_elegidos_defensor.get("torre1", "#ff2200")
                 elif texto_id == "C":
@@ -665,7 +663,7 @@ def mostrar_combate(defensor, atacante, rol_defensor, rol_atacante, faccion_defe
                 else:
                     color_base = colores_elegidos_defensor.get("torre1", "#ff2200")
 
-                # 🟢 LA LÍNEA CLAVE: Le decimos a la matriz lógica que aquí hay una torre (1)
+                
                 juego_combate.mapa[f][c] = 1
 
                 juego_combate.botones[f][c].config(
@@ -730,8 +728,8 @@ def mostrar_combate(defensor, atacante, rol_defensor, rol_atacante, faccion_defe
             dist_minima = float("inf")
 
             if texto_torre == "D":
-                # Disparador: frente y diagonales derechas hasta 3 casillas,
-                # además puede disparar arriba y abajo en su misma columna hasta 3 casillas
+               
+               
                 for u in unidades:
                     if u.vida > 0:
                         misma_o_diagonal = abs(u.fila - tf) <= 1
@@ -754,14 +752,14 @@ def mostrar_combate(defensor, atacante, rol_defensor, rol_atacante, faccion_defe
                                 objetivo = u
 
             elif texto_torre == "T":
-                # Torre1: onda 3x3
+                
                 for u in unidades:
                     if u.vida > 0:
                         if abs(u.fila - tf) <= 1 and abs(u.col - tc) <= 1 and not (u.fila == tf and u.col == tc):
                             objetivos_t1.append(u)
 
             else:
-                # Torre2 / otras: objetivo más cercano por Manhattan
+               
                 for u in unidades:
                     if u.vida > 0:
                         dist = abs(u.fila - tf) + abs(u.col - tc)
@@ -769,7 +767,7 @@ def mostrar_combate(defensor, atacante, rol_defensor, rol_atacante, faccion_defe
                             dist_minima = dist
                             objetivo = u
 
-            # Aplicar daño Torre1
+           
             if texto_torre == "T" and objetivos_t1:
                 nombres = []
                 for e in objetivos_t1:
@@ -789,7 +787,7 @@ def mostrar_combate(defensor, atacante, rol_defensor, rol_atacante, faccion_defe
                 if hasattr(torre, "animar"):
                     torre.animar(juego_combate, ventana)
 
-            # Aplicar daño normal
+           
             elif objetivo:
                 objetivo.vida -= daño_torre
                 objetivo.vida = max(0, objetivo.vida)
@@ -808,7 +806,7 @@ def mostrar_combate(defensor, atacante, rol_defensor, rol_atacante, faccion_defe
                     objetivo.turnos_paralizado = 2
                     lbl_estado.config(text=f"⚡ ¡{objetivo.nombre} quedó paralizado por 2 turnos!")
 
-                # Habilidad de Torre2 (Cactus): cuando le queda poca vida, ataca más rápido (golpe extra en el mismo turno)
+                # Habilidad de Torre2, cuando le queda poca vida, ataca más rápido 
                 if texto_torre == "C" and objetivo.vida > 0:
                     vida_max_torre = getattr(torre, "vida_max", 200)
                     if getattr(torre, "vida", 0) < vida_max_torre * 0.30:
@@ -856,7 +854,7 @@ def mostrar_combate(defensor, atacante, rol_defensor, rol_atacante, faccion_defe
 
             pasos = u.velocidad
 
-            # Sprint del Corredor: si le quedan turnos de sprint, avanza 2 celdas en vez de 1
+            # Sprint del Corredo,  si le quedan turnos de sprint, avanza 2 celdas en vez de 1
             if u.nombre == "Corredor" and u.turnos_sprint > 0:
                 pasos = 2
                 u.turnos_sprint -= 1
@@ -872,7 +870,7 @@ def mostrar_combate(defensor, atacante, rol_defensor, rol_atacante, faccion_defe
                 fila_actual = u.fila
                 col_actual = u.col
 
-                # ¿Hay una torre adyacente (1 celda en cualquiera de las 4 direcciones) ahora mismo?
+                
                 torre_objetivo_pos = None
                 es_ataque_a_distancia = False
                 direcciones_adyacentes = [(-1, 0), (1, 0), (0, -1), (0, 1)]
@@ -884,7 +882,7 @@ def mostrar_combate(defensor, atacante, rol_defensor, rol_atacante, faccion_defe
                             torre_objetivo_pos = (f_chk, c_chk)
                             break
 
-                # El Corredor también puede disparar a 2 celdas en línea recta, sin contraataque
+                # El Corredor dispara a 2 celdas en línea recta
                 if torre_objetivo_pos is None and u.nombre == "Corredor":
                     for df, dc in direcciones_adyacentes:
                         f_chk, c_chk = fila_actual + df * 2, col_actual + dc * 2
@@ -942,7 +940,7 @@ def mostrar_combate(defensor, atacante, rol_defensor, rol_atacante, faccion_defe
                         dibujar_torre(tf_obj, tc_obj, torre)
                         lbl_estado.config(text=f"🧟 {u.nombre} atacó defensa en ({tf_obj},{tc_obj})! HP: {torre.vida}")
 
-                    # Atacar consume el resto del turno de esta unidad (no sigue dando pasos)
+                    
                     break
 
                 objetivo = None
@@ -980,11 +978,11 @@ def mostrar_combate(defensor, atacante, rol_defensor, rol_atacante, faccion_defe
                 else:
                     nueva_f, nueva_c = fila_actual, max(0, col_actual - 1)
 
-                # Nunca moverse a una celda con torre (caso límite: ya estaba pegado pero no se detectó arriba)
+                # Nunca moverse a una celda con torre 
                 if juego_combate.mapa[nueva_f][nueva_c] == 1:
                     break
 
-                # Si la celda de destino tiene otra unidad aliada, intentar rodear (arriba/abajo)
+                # Si la celda de destino tiene otra unidad aliada, intentar rodear 
                 if juego_combate.mapa[nueva_f][nueva_c] == 6 and (nueva_f, nueva_c) != (fila_actual, col_actual):
                     rodeo_encontrado = False
                     opciones_rodeo = []
@@ -998,9 +996,9 @@ def mostrar_combate(defensor, atacante, rol_defensor, rol_atacante, faccion_defe
                             rodeo_encontrado = True
                             break
                     if not rodeo_encontrado:
-                        break  # no hay forma de avanzar este paso, se queda quieta
+                        break  
 
-                # ¿Llegó a la base?
+                
                 if nueva_c <= 1:
                     limpiar_celda(fila_actual, col_actual)
                     vida_base[0] -= 25
@@ -1037,7 +1035,7 @@ def mostrar_combate(defensor, atacante, rol_defensor, rol_atacante, faccion_defe
                 u.col = nueva_c
                 dibujar_unidad(u)
 
-            # (fin del for de pasos individuales de esta unidad)
+            #
 
         # Limpiar muertos de la lista de unidades
         unidades[:] = [u for u in unidades if u.vida > 0]
@@ -1089,7 +1087,7 @@ def mostrar_combate(defensor, atacante, rol_defensor, rol_atacante, faccion_defe
 
 
 """
-Controlador de Partidas, Menús y Logins Completos
+Controlador de Partidas, Menús y Logins 
 """
 def mostrar_seleccion_faccion(defensor, atacante):
     global frame_actual
@@ -1122,7 +1120,7 @@ def mostrar_seleccion_faccion(defensor, atacante):
         if sel_faccion_defensor.get() == sel_faccion_atacante.get():
             lbl_error.config(text="⚠ Las facciones deben ser diferentes")
             return
-        # Enviamos "Defensor" y "Atacante" como roles de relleno para que nada se rompa
+       
         mostrar_fase_defensor(defensor, atacante, "Defensor", "Atacante", sel_faccion_defensor.get(), sel_faccion_atacante.get())
 
     tk.Button(frame_actual, text="☣  CONFIRMAR  ☣", command=confirmar, font=FUENTE_BTN, bg="#1a0000", fg=COLOR_ROJO_VIF, relief="flat", cursor="hand2", padx=40, pady=12, width=20).pack(pady=8)
